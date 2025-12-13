@@ -16,7 +16,90 @@
 -- those files to learn more.
 ------------------------------------------------------------
 
-local af = Def.ActorFrame{}
+------------------------------------------------------------
+-- Discord Rich Presence (local)
+------------------------------------------------------------
+
+local last_presence = nil
+local in_gameplay = false
+local sep = string.char(31)
+local idleString = "Idle".. sep .. "Menu" .. sep .. sep .. sep .. sep .. sep .. sep .. sep
+
+
+local function UpdateDiscordPresence()
+-- SM("Discord update tick")
+
+local song = GAMESTATE:GetCurrentSong()
+local steps = GAMESTATE:GetCurrentSteps(PLAYER_1)
+
+-- SM("Song: "..tostring(song))
+-- SM("Steps: "..tostring(steps))
+
+if not song or not steps then return end
+
+	local pack_name = song and song:GetGroupName() or "Unknown Pack"
+	local step_artist = steps and steps:GetAuthorCredit() or "Unknown"
+
+	local title = song:GetDisplayMainTitle()
+	local diff  = tostring(steps:GetDifficulty())
+	local meter = steps:GetMeter()
+	local artist = song:GetDisplayArtist()
+
+	-- Banner (usually 200x80)
+	local banner_path = song:GetBannerPath() -- returns string path or nil
+
+	-- CD title (usually 64x64)
+	local cd_path = song:GetCDTitlePath() -- returns string path or nil
+	-- SM("banner: " .. cd_path)
+
+
+	-- local presence = "Playing|" .. title .. "|" .. diff .. "|" .. meter .. "|" .. artist .. "|" .. banner_path .. "|" .. cd_path
+	local presence = table.concat({ "Playing", title, diff, meter, artist, pack_name, step_artist, banner_path, cd_path }, sep)
+
+	------------------------------------------------------------------------------
+
+	-- SM(presence)
+	if presence ~= last_presence then
+		-- SM("Updating file")
+		WriteDiscordPresence(presence)
+		last_presence = presence
+	end
+end
+
+local af = Def.ActorFrame{
+
+	OnCommand=function(self)
+		-- SM("Discord AF OnCommand") -- DEBUG
+		in_gameplay = true         -- <<< mark gameplay started
+		last_presence = nil
+		self:SetUpdateFunction(UpdateDiscordPresence)
+	end,
+
+	OffCommand=function()
+		if in_gameplay then
+			WriteDiscordPresence(idleString)
+			in_gameplay = false
+		end
+	end,
+
+	CancelMessageCommand=function()
+		if in_gameplay then
+			WriteDiscordPresence(idleString)
+			in_gameplay = false
+		end
+	end,
+
+	GameplayEndedMessageCommand=function()
+		if in_gameplay then
+			WriteDiscordPresence(idleString)
+			in_gameplay = false
+		end
+	end
+}
+
+------------------------------------------------------------
+-- end of discord stuff
+------------------------------------------------------------
 
 af[#af+1] = LoadActor("./WhoIsCurrentlyWinning.lua")
 af[#af+1] = LoadActor("./FailOnHoldStart.lua")
