@@ -214,3 +214,25 @@ function WriteJSONFile(path, data)
 	end
 	f:destroy()
 end
+
+------------------------------------------------------------
+-- Discord Rich Presence
+------------------------------------------------------------
+
+WriteDiscordPresence = function(data)
+SM("WriteDiscordPresence called")
+
+local f = RageFileUtil.CreateRageFile()
+if not f then
+	SM("Failed to create RageFile")
+	return
+	end
+
+	if not f:Open("Save/discord_presence.txt", 2) then
+		SM("Failed to open file")
+		return
+		end
+
+		f:Write(data)
+		f:Close()
+		end
