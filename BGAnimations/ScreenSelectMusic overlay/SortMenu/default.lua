@@ -160,6 +160,7 @@ local DirectInputToEngine = function(self)
 	screen:RemoveInputCallback(sortmenu_input)
 	screen:RemoveInputCallback(testinput_input)
 	screen:RemoveInputCallback(leaderboard_input)
+	screen:RemoveInputCallback(srpg9_input)
 
 	for player in ivalues(PlayerNumber) do
 		SCREENMAN:set_input_redirected(player, false)
@@ -167,6 +168,7 @@ local DirectInputToEngine = function(self)
 	self:playcommand("HideSortMenu")
 	overlay:playcommand("HideTestInput")
 	overlay:playcommand("HideLeaderboard")
+	overlay:playcommand("HideSRPG9")
 end
 
 ------------------------------------------------------------
