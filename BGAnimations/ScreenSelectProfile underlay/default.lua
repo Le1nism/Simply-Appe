@@ -164,6 +164,29 @@ local t = Def.ActorFrame {
 				MESSAGEMAN:Broadcast("ReloadScreenForMemoryCards")
 			end
 		end
+
+		for player in ivalues(PlayerNumber) do
+			if GAMESTATE:IsHumanPlayer(player) then
+				local name = nil
+	
+				-- USB memory card takes priority
+				if MEMCARDMAN:GetCardState(player) ~= 'MemoryCardState_none' then
+					name = MEMCARDMAN:GetName(player)
+				else
+					-- local profile
+					local info = scrollers[player]:get_info_at_focus_pos()
+					if type(info) == "table" and info.displayname and info.displayname ~= "" then
+						name = info.displayname
+					end
+				end
+	
+				if name then
+					Trace("[SRPG] Triggering fetch for " .. ToEnumShortString(player) .. ": " .. name)
+					SRPG_FetchData(name)
+				end
+			end
+		end
+
 		SCREENMAN:GetTopScreen():Finish()
 	end,
 	WhatMessageCommand=function(self) self:runcommandsonleaves(function(subself) if subself.distort then subself:distort(0.5) end end):sleep(4):queuecommand("Undistort") end,

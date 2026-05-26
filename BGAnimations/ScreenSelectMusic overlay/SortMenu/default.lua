@@ -9,7 +9,6 @@ sort_wheel.custom_functions = {}
 local sortmenu_input = LoadActor("SortMenu_InputHandler.lua", sort_wheel)
 local testinput_input = LoadActor("TestInput_InputHandler.lua")
 local leaderboard_input = LoadActor("Leaderboard_InputHandler.lua")
-local srpg9_input = LoadActor("SRPG9_InputHandler.lua")
 -- "MT" is my personal means of denoting that this thing (the file, the variable, whatever)
 -- has something to do with a Lua metatable.
 --
@@ -160,7 +159,6 @@ local DirectInputToEngine = function(self)
 	screen:RemoveInputCallback(sortmenu_input)
 	screen:RemoveInputCallback(testinput_input)
 	screen:RemoveInputCallback(leaderboard_input)
-	screen:RemoveInputCallback(srpg9_input)
 
 	for player in ivalues(PlayerNumber) do
 		SCREENMAN:set_input_redirected(player, false)
@@ -168,7 +166,6 @@ local DirectInputToEngine = function(self)
 	self:playcommand("HideSortMenu")
 	overlay:playcommand("HideTestInput")
 	overlay:playcommand("HideLeaderboard")
-	overlay:playcommand("HideSRPG9")
 end
 
 ------------------------------------------------------------
