@@ -1,13 +1,12 @@
 local json_path = THEME:GetCurrentThemeDirectory() .. "srpg_data.json"
 
--- 1. Modificato per ritornare TUTTI i dati
 local function LoadAllRows()
     if FILEMAN:DoesFileExist(json_path) then
         local content = lua.ReadFile(json_path)
         if content and #content > 0 then
             local data = JsonDecode(content)
             if data and #data > 0 then
-                return data -- Ritorna l'intera lista di righe
+                return data
             end
         end
     end
@@ -20,10 +19,10 @@ local af = Def.ActorFrame{
         self:visible(true)
         local rows = LoadAllRows()
         if rows then
-            -- Mandiamo l'intera tabella a tutti i figli dell'ActorFrame
+            -- Send whole table to all ActorFrame children
             self:playcommand("SetData", rows)
         else
-            -- Fallback se il file è vuoto o non esiste
+            -- Fallback for empty/nonexistent file
             self:playcommand("SetData", {{
                 title = "No data found",
                 bpm_base = "-",
@@ -37,25 +36,25 @@ local af = Def.ActorFrame{
     end,
     HideSRPG9Command=function(self) self:visible(false) end,
 
-    -- Sfondo scuro full screen
+    -- Background dim
     Def.Quad{
         InitCommand=function(self) self:FullScreen():diffuse(0,0,0,0.85) end
     },
 
-    -- Pannello Centrale / Card Frame
+    -- Card Frame
     Def.ActorFrame{
         InitCommand=function(self) self:xy(_screen.cx, _screen.cy) end,
 
-        -- Card border (Ingrandito l'altezza da 224 a 424 per ospitare più righe)
+        -- Card border
         Def.Quad{
             InitCommand=function(self) self:zoomto(524, 424):diffuse(Color.White) end
         },
-        -- Card background (Ingrandito l'altezza da 220 a 420)
+        -- Card background
         Def.Quad{
             InitCommand=function(self) self:zoomto(520, 420):diffuse(Color.Black) end
         },
 
-        -- Titolo
+        -- Title
         Def.BitmapText{
             Font="Common Bold",
             Text="SRPG9 Companion",
@@ -76,7 +75,7 @@ local af = Def.ActorFrame{
             InitCommand=function(self) self:y(-115):zoomto(490, 1):diffuse(0.5,0.5,0.5,0.8) end
         },
 
-        -- Prompt per tornare indietro
+        -- Go back prompt
         Def.BitmapText{
             Font="Common Bold",
             Text="Press ENTER to go back",
@@ -88,10 +87,10 @@ local af = Def.ActorFrame{
     }
 }
 
--- 2. GENERAZIONE DINAMICA DELLE RIGHE (Fino a un massimo di, ad esempio, 10 righe)
+-- Dynamic row generation
 local max_rows = 10
-local start_y = -85   -- Coordinata Y della prima riga di dati
-local row_spacing = 25 -- Spazio verticale tra una riga e l'altra
+local start_y = -85   -- First row Y coord
+local row_spacing = 25 -- Vertical spacing between rows
 
 for i = 1, max_rows do
     local current_y = start_y + ((i - 1) * row_spacing)
@@ -99,7 +98,7 @@ for i = 1, max_rows do
     af[#af+1] = Def.ActorFrame{
         InitCommand=function(self) self:xy(_screen.cx, _screen.cy + current_y) end,
         SetDataCommand=function(self, rows)
-            -- Se la riga esiste nel JSON, mostra i dati, altrimenti nascondi questa riga grafica
+            -- If exists in the JSON show it, if not hide it
             if rows[i] then
                 self:visible(true)
             else
@@ -107,7 +106,7 @@ for i = 1, max_rows do
             end
         end,
 
-        -- Canzoni (Titolo)
+        -- Song title
         Def.BitmapText{
             Font="Common Normal",
             InitCommand=function(self) self:x(-240):zoom(0.7):horizalign(left):maxwidth(185) end,
@@ -119,7 +118,7 @@ for i = 1, max_rows do
             InitCommand=function(self) self:x(-45):zoom(0.7):horizalign(right) end,
             SetDataCommand=function(self, rows) if rows[i] then self:settext(tostring(rows[i].bpm_base)) end end
         },
-        -- Difficoltà
+        -- Block
         Def.BitmapText{
             Font="Common Normal",
             InitCommand=function(self) self:x(5):zoom(0.7):horizalign(right) end,
@@ -137,7 +136,7 @@ for i = 1, max_rows do
             InitCommand=function(self) self:x(115):zoom(0.7):horizalign(right) end,
             SetDataCommand=function(self, rows) if rows[i] then self:settext(tostring(rows[i].score)) end end
         },
-        -- Durata
+        -- Length
         Def.BitmapText{
             Font="Common Normal",
             InitCommand=function(self) self:x(175):zoom(0.7):horizalign(right) end,
