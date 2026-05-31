@@ -106,6 +106,9 @@ local af = Def.ActorFrame{
 
 	-- SRPG9 Companion overlay
 	LoadActor("./SRPG9.lua"),
+
+	-- FSR Manager overlay
+	LoadActor("./FSR.lua"),
 }
 
 return af
