@@ -40,27 +40,27 @@ local function CreateSensorPanel(name, index, x, y)
 	return Def.ActorFrame{
 		InitCommand=function(self) self:xy(x, y) end,
 
-		-- Outer Border
+		-- 1px border outline
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(74, 54):diffuse(0.4, 0.4, 0.4, 1) end
+			InitCommand=function(self) self:zoomto(72, 48):diffuse(1, 1, 1, 0.08) end
 		},
-		-- Inner Background
+		-- Main Tile Background
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(70, 50):diffuse(0.08, 0.08, 0.08, 1) end
+			InitCommand=function(self) self:zoomto(70, 46):diffuse(0.06, 0.06, 0.06, 0.95) end
 		},
 
 		-- Direction Name
 		Def.BitmapText{
 			Font="Common Normal",
 			Text=name,
-			InitCommand=function(self) self:y(-14):zoom(0.45):diffuse(color("#aaaaff")) end
+			InitCommand=function(self) self:y(-10):zoom(0.38):diffuse(0.5, 0.5, 0.5, 1) end
 		},
 
 		-- Threshold Value
 		Def.BitmapText{
-			Font="Common Bold",
+			Font="Common Normal",
 			Text="-",
-			InitCommand=function(self) self:y(8):zoom(0.65):diffuse(Color.White) end,
+			InitCommand=function(self) self:y(8):zoom(0.7):diffuse(1, 1, 1, 0.9) end,
 			FSRDataReadyMessageCommand=function(self, params)
 				local thresholds = params.thresholds or {}
 				local val = thresholds[index]
@@ -98,18 +98,24 @@ local af = Def.ActorFrame{
 	Def.ActorFrame{
 		InitCommand=function(self) self:xy(_screen.cx, _screen.cy) end,
 
+		-- Subtle 1px card border
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(524, 424):diffuse(Color.White) end
+			InitCommand=function(self) self:zoomto(522, 422):diffuse(1, 1, 1, 0.12) end
 		},
+		-- Card Background
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(520, 420):diffuse(Color.Black) end
+			InitCommand=function(self) self:zoomto(520, 420):diffuse(0.03, 0.03, 0.03, 0.96) end
 		},
 
 		-- Title
 		Def.BitmapText{
-			Font="Common Bold",
-			Text="FSR Manager",
-			InitCommand=function(self) self:y(-180):zoom(0.9):diffuse(Color.White) end,
+			Font="Common Normal",
+			Text="FSR MANAGER",
+			InitCommand=function(self) self:y(-175):zoom(0.75):diffuse(0.9, 0.9, 0.9, 1) end,
+		},
+		-- Title Accent Underline
+		Def.Quad{
+			InitCommand=function(self) self:y(-155):zoomto(60, 2):diffuse(color("#88ff88")) end
 		},
 
 		-- Status Text
@@ -117,10 +123,10 @@ local af = Def.ActorFrame{
 			Font="Common Normal",
 			Name="StatusText",
 			Text="Fetching FSR settings...",
-			InitCommand=function(self) self:y(0):zoom(0.8):diffuse(Color.White):maxwidth(400) end,
+			InitCommand=function(self) self:y(0):zoom(0.75):diffuse(0.6, 0.6, 0.6, 1):maxwidth(400) end,
 			SetStatusCommand=function(self, params)
 				if params.status == "loading" then
-					self:visible(true):settext(params.message):diffuse(Color.White)
+					self:visible(true):settext(params.message):diffuse(0.6, 0.6, 0.6, 1)
 				elseif params.status == "error" then
 					self:visible(true):settext("Error: " .. params.message .. "\n\nEnsure FSR server is running on localhost:5000"):diffuse(Color.Red)
 				else
@@ -152,25 +158,38 @@ local af = Def.ActorFrame{
 				self:visible(false)
 			end,
 
+			-- Vertical Divider
+			Def.Quad{
+				InitCommand=function(self) self:x(-15):y(-15):zoomto(1, 200):diffuse(1, 1, 1, 0.08) end
+			},
+
 			-- Left Side: Profiles
 			Def.ActorFrame{
 				InitCommand=function(self) self:x(-130) end,
 
+				-- Active Profile Label
 				Def.BitmapText{
 					Font="Common Normal",
-					Text="PROFILES",
-					InitCommand=function(self) self:y(-110):zoom(0.6):horizalign(left):diffuse(color("#aaaaff")) end
+					Text="ACTIVE PROFILE",
+					InitCommand=function(self) self:y(-110):zoom(0.4):horizalign(left):diffuse(color("#88ff88")) end
 				},
 
-				-- Active Profile Text
+				-- Active Profile Value
 				Def.BitmapText{
 					Font="Common Normal",
-					InitCommand=function(self) self:y(-75):zoom(0.7):horizalign(left) end,
+					InitCommand=function(self) self:y(-92):zoom(0.75):horizalign(left):diffuse(1, 1, 1, 0.9) end,
 					FSRDataReadyMessageCommand=function(self, params)
 						local active = params.cur_profile or ""
-						if active == "" then active = "[None]" end
-						self:settext("Active: " .. active):diffuse(color("#88ff88"))
+						if active == "" then active = "None" end
+						self:settext(active)
 					end
+				},
+
+				-- Available Profiles Header
+				Def.BitmapText{
+					Font="Common Normal",
+					Text="AVAILABLE PROFILES",
+					InitCommand=function(self) self:y(-35):zoom(0.4):horizalign(left):diffuse(0.5, 0.5, 0.5, 1) end
 				},
 
 				-- List of all profiles (supports up to 6 profiles)
@@ -180,16 +199,16 @@ local af = Def.ActorFrame{
 					for idx = 1, max_profiles_display do
 						t[#t+1] = Def.BitmapText{
 							Font="Common Normal",
-							InitCommand=function(self) self:y(-40 + (idx-1)*25):zoom(0.65):horizalign(left) end,
+							InitCommand=function(self) self:y(-15 + (idx-1)*22):zoom(0.65):horizalign(left) end,
 							FSRDataReadyMessageCommand=function(self, params)
 								local profiles = params.profiles or {}
 								local name = profiles[idx]
 								if name then
-									self:visible(true):settext("- " .. name)
+									self:visible(true):settext(name)
 									if name == params.cur_profile then
-										self:diffuse(color("#ffff88"))
+										self:diffuse(color("#88ff88")):diffusealpha(1)
 									else
-										self:diffuse(Color.White)
+										self:diffuse(1, 1, 1, 0.4)
 									end
 								else
 									self:visible(false)
@@ -208,7 +227,7 @@ local af = Def.ActorFrame{
 				Def.BitmapText{
 					Font="Common Normal",
 					Text="THRESHOLDS",
-					InitCommand=function(self) self:y(-110):zoom(0.6):horizalign(center):diffuse(color("#aaaaff")) end
+					InitCommand=function(self) self:y(-110):zoom(0.4):horizalign(center):diffuse(0.5, 0.5, 0.5, 1) end
 				},
 
 				CreateSensorPanel("UP",    3, 0,   -45),
@@ -218,14 +237,11 @@ local af = Def.ActorFrame{
 			}
 		},
 
-		-- Go Back & Reload Prompts
+		-- Footer Action Prompt
 		Def.BitmapText{
-			Font="Common Bold",
-			Text="SELECT to reload • START to go back",
-			InitCommand=function(self) self:y(180):zoom(0.65) end,
-			OnCommand=function(self)
-				self:diffuseshift():effectcolor1(1,1,1,1):effectcolor2(0.5,0.5,0.5,1):effectperiod(1.5)
-			end
+			Font="Common Normal",
+			Text="Press START to return",
+			InitCommand=function(self) self:y(180):zoom(0.55):diffuse(0.5, 0.5, 0.5, 1) end
 		}
 	}
 }
