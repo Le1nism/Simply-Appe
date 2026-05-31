@@ -370,8 +370,13 @@ local t = Def.ActorFrame {
 			{ {"WhereforeArtThou", "SongSearch"}, not GAMESTATE:IsCourseMode() and ThemePrefs.Get("KeyboardFeatures") },
 			{ {"ImLovinIt", "AddFavorite"}, function() return GAMESTATE:GetCurrentSong() ~= nil end},
 			{ {"MixTape", "Preferred"}, AddFavorites },
-			{ {"ChangeMode", "Casual"}, SL.Global.Stages.PlayedThisGame == 0 and SL.Global.GameMode ~= "Casual" },	
-			{ {"Tune your FSR?", "FSR Manager"} },
+			{ {"ChangeMode", "Casual"}, SL.Global.Stages.PlayedThisGame == 0 and SL.Global.GameMode ~= "Casual" },
+			{
+				{"", "CategoryFSR"},
+				{
+					{ {"LiveValues", "LiveThreshold"} },
+				}
+			},
 			{ 
 
 				{"", "CategorySorts"}, 
