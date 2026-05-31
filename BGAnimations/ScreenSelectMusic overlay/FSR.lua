@@ -100,7 +100,7 @@ local function CreateSensorBar(name, index, x)
 					-- Highlight fill if FSR value exceeds active threshold
 					local thresh = active_thresholds[index] or 0
 					if val >= thresh then
-						self:diffuse(color("#88ff88")):diffusealpha(0.85)
+						self:diffuse(GetCurrentColor()):diffusealpha(0.85)
 					else
 						self:diffuse(1, 1, 1, 0.3)
 					end
@@ -165,7 +165,7 @@ local function CreateSensorBar(name, index, x)
 					-- Highlight actual value text if pressed
 					local thresh = active_thresholds[index] or 0
 					if val >= thresh then
-						self:diffuse(color("#88ff88"))
+						self:diffuse(GetCurrentColor())
 					else
 						self:diffuse(1, 1, 1, 0.7)
 					end
@@ -233,7 +233,7 @@ local af = Def.ActorFrame{
 		},
 		-- Title Accent Underline
 		Def.Quad{
-			InitCommand=function(self) self:y(-155):zoomto(60, 2):diffuse(color("#88ff88")) end
+			InitCommand=function(self) self:y(-155):zoomto(60, 2):diffuse(GetCurrentColor()) end
 		},
 
 		-- Status Text
@@ -289,7 +289,7 @@ local af = Def.ActorFrame{
 				Def.BitmapText{
 					Font="Common Normal",
 					Text="ACTIVE PROFILE",
-					InitCommand=function(self) self:y(-110):zoom(0.4):horizalign(left):diffuse(color("#88ff88")) end
+					InitCommand=function(self) self:y(-110):zoom(0.4):horizalign(left):diffuse(GetCurrentColor()) end
 				},
 
 				-- Active Profile Value
@@ -324,7 +324,7 @@ local af = Def.ActorFrame{
 								if name then
 									self:visible(true):settext(name)
 									if name == params.cur_profile then
-										self:diffuse(color("#88ff88")):diffusealpha(1)
+										self:diffuse(GetCurrentColor()):diffusealpha(1)
 									else
 										self:diffuse(1, 1, 1, 0.4)
 									end
