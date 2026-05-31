@@ -15,20 +15,6 @@ local af = Def.ActorFrame{
 		-- the preselected music rate.
 		local songOptions = GAMESTATE:GetSongOptionsObject("ModsLevel_Preferred")
 		songOptions:MusicRate(SL.Global.ActiveModifiers.MusicRate)
-
-		-- Fallback: if SRPG_DATA wasn't loaded yet (e.g. guest player / no profile screen)
-    	-- try fetching now using the loaded profile name
-		if not SRPG_DATA then
-			for _, player in ipairs(GAMESTATE:GetHumanPlayers()) do
-				local profile = PROFILEMAN:GetProfile(player)
-				if profile then
-					local name = profile:GetDisplayName()
-					if name and name ~= "" then
-						SRPG_FetchData(name)
-					end
-				end
-			end
-		end
 	end,
 
 	PlayerProfileSetMessageCommand=function(self, params)
@@ -103,9 +89,6 @@ local af = Def.ActorFrame{
 	LoadActor("./Leaderboard.lua"),
 
 	LoadActor("./SongSearch/default.lua"),
-
-	-- SRPG9 Companion overlay
-	LoadActor("./SRPG9.lua"),
 
 	-- FSR Manager overlay
 	LoadActor("./FSR.lua"),
