@@ -157,9 +157,9 @@ local af = Def.ActorFrame{
 				InitCommand=function(self) self:x(-130) end,
 
 				Def.BitmapText{
-					Font="Common Bold",
+					Font="Common Normal",
 					Text="PROFILES",
-					InitCommand=function(self) self:y(-110):zoom(0.8):horizalign(left):diffuse(color("#aaaaff")) end
+					InitCommand=function(self) self:y(-110):zoom(0.6):horizalign(left):diffuse(color("#aaaaff")) end
 				},
 
 				-- Active Profile Text
@@ -206,9 +206,9 @@ local af = Def.ActorFrame{
 				InitCommand=function(self) self:x(120) end,
 
 				Def.BitmapText{
-					Font="Common Bold",
+					Font="Common Normal",
 					Text="THRESHOLDS",
-					InitCommand=function(self) self:y(-110):zoom(0.8):horizalign(center):diffuse(color("#aaaaff")) end
+					InitCommand=function(self) self:y(-110):zoom(0.6):horizalign(center):diffuse(color("#aaaaff")) end
 				},
 
 				CreateSensorPanel("UP",    3, 0,   -45),
