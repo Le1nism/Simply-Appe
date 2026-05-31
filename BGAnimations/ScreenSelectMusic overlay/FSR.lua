@@ -1,3 +1,6 @@
+local ws = nil
+local active_thresholds = { 0, 0, 0, 0 }
+
 local function FetchFSRData()
 	if not NETWORK then
 		MESSAGEMAN:Broadcast("FSRDataFailed", { message = "NETWORK not available" })
@@ -36,40 +39,145 @@ local function FetchFSRData()
 	}
 end
 
-local function CreateSensorPanel(name, index, x, y)
+local function ConnectWebSocket()
+	if ws then
+		ws:Close()
+		ws = nil
+	end
+
+	ws = NETWORK:WebSocket{
+		url = "ws://localhost:5000/ws",
+		pingInterval = 10,
+		automaticReconnect = true,
+		onMessage = function(msg)
+			local msgType = ToEnumShortString(msg.type)
+			if msgType == "Message" then
+				local ok, data = pcall(JsonDecode, msg.data)
+				if ok and data and type(data) == "table" then
+					local action = data[1]
+					local payload = data[2]
+					if action == "values" then
+						MESSAGEMAN:Broadcast("FSRValuesUpdate", payload)
+					elseif action == "thresholds" then
+						MESSAGEMAN:Broadcast("FSRThresholdsUpdate", payload)
+					end
+				end
+			end
+		end
+	}
+end
+
+local function CreateSensorBar(name, index, x)
+	local bar_height = 140
+	local bar_width = 18
+	local max_val = 1023
+	local half_height = bar_height / 2
+	local bottom_y = half_height
+
 	return Def.ActorFrame{
-		InitCommand=function(self) self:xy(x, y) end,
+		InitCommand=function(self) self:x(x) end,
 
-		-- 1px border outline
+		-- 1px Border Outline for the Bar Track
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(72, 48):diffuse(1, 1, 1, 0.08) end
+			InitCommand=function(self) self:zoomto(bar_width + 2, bar_height + 2):diffuse(1, 1, 1, 0.08) end
 		},
-		-- Main Tile Background
+		-- Bar Track Background (dark slot)
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(70, 46):diffuse(0.06, 0.06, 0.06, 0.95) end
+			InitCommand=function(self) self:zoomto(bar_width, bar_height):diffuse(0.06, 0.06, 0.06, 0.95) end
 		},
 
-		-- Direction Name
+		-- Bar Fill Quad (valign bottom so it grows upwards)
+		Def.Quad{
+			Name="Fill",
+			InitCommand=function(self) self:valign(bottom):zoomto(bar_width - 4, 0):y(bottom_y):diffuse(1, 1, 1, 0.3) end,
+			FSRValuesUpdateMessageCommand=function(self, params)
+				local values = params.values or {}
+				local val = values[index]
+				if val then
+					local h = (val / max_val) * bar_height
+					self:zoomto(bar_width - 4, math.max(0, math.min(h, bar_height)))
+
+					-- Highlight fill if FSR value exceeds active threshold
+					local thresh = active_thresholds[index] or 0
+					if val >= thresh then
+						self:diffuse(color("#88ff88")):diffusealpha(0.85)
+					else
+						self:diffuse(1, 1, 1, 0.3)
+					end
+				end
+			end
+		},
+
+		-- Threshold Mark (red horizontal indicator line)
+		Def.Quad{
+			Name="ThresholdMark",
+			InitCommand=function(self) self:zoomto(bar_width + 4, 2):diffuse(color("#ff4444")):visible(false) end,
+			FSRThresholdsUpdateMessageCommand=function(self, params)
+				local thresholds = params.thresholds or {}
+				local t = thresholds[index]
+				if t then
+					active_thresholds[index] = t
+					local py = bottom_y - (t / max_val) * bar_height
+					self:y(py):visible(true)
+				end
+			end,
+			FSRDataReadyMessageCommand=function(self, params)
+				local thresholds = params.thresholds or {}
+				local t = thresholds[index]
+				if t then
+					active_thresholds[index] = t
+					local py = bottom_y - (t / max_val) * bar_height
+					self:y(py):visible(true)
+				end
+			end
+		},
+
+		-- Threshold Value (Above the bar)
+		Def.BitmapText{
+			Font="Common Normal",
+			Name="ThresholdValue",
+			Text="-",
+			InitCommand=function(self) self:y(-half_height - 12):zoom(0.48):diffuse(0.5, 0.5, 0.5, 1) end,
+			FSRThresholdsUpdateMessageCommand=function(self, params)
+				local thresholds = params.thresholds or {}
+				local t = thresholds[index]
+				if t then self:settext(tostring(t)) end
+			end,
+			FSRDataReadyMessageCommand=function(self, params)
+				local thresholds = params.thresholds or {}
+				local t = thresholds[index]
+				if t then self:settext(tostring(t)) end
+			end
+		},
+
+		-- Current Actual Value (Below the bar)
+		Def.BitmapText{
+			Font="Common Normal",
+			Name="ActualValue",
+			Text="-",
+			InitCommand=function(self) self:y(half_height + 12):zoom(0.48):diffuse(1, 1, 1, 0.7) end,
+			FSRValuesUpdateMessageCommand=function(self, params)
+				local values = params.values or {}
+				local val = values[index]
+				if val then
+					self:settext(tostring(val))
+
+					-- Highlight actual value text if pressed
+					local thresh = active_thresholds[index] or 0
+					if val >= thresh then
+						self:diffuse(color("#88ff88"))
+					else
+						self:diffuse(1, 1, 1, 0.7)
+					end
+				end
+			end
+		},
+
+		-- Direction Label
 		Def.BitmapText{
 			Font="Common Normal",
 			Text=name,
-			InitCommand=function(self) self:y(-10):zoom(0.38):diffuse(0.5, 0.5, 0.5, 1) end
-		},
-
-		-- Threshold Value
-		Def.BitmapText{
-			Font="Common Normal",
-			Text="-",
-			InitCommand=function(self) self:y(8):zoom(0.7):diffuse(1, 1, 1, 0.9) end,
-			FSRDataReadyMessageCommand=function(self, params)
-				local thresholds = params.thresholds or {}
-				local val = thresholds[index]
-				if val then
-					self:settext(tostring(val))
-				else
-					self:settext("-")
-				end
-			end
+			InitCommand=function(self) self:y(half_height + 27):zoom(0.4):diffuse(0.5, 0.5, 0.5, 1) end
 		}
 	}
 end
@@ -82,11 +190,21 @@ local af = Def.ActorFrame{
 		self:playcommand("FetchFSRData")
 	end,
 
-	HideFSRCommand=function(self) self:visible(false) end,
+	HideFSRCommand=function(self)
+		self:visible(false)
+		if ws then
+			ws:Close()
+			ws = nil
+		end
+	end,
 
 	FetchFSRDataCommand=function(self)
 		self:playcommand("SetStatus", { status = "loading", message = "Fetching FSR settings..." })
 		FetchFSRData()
+	end,
+
+	FSRDataReadyMessageCommand=function(self)
+		ConnectWebSocket()
 	end,
 
 	-- Background dim
@@ -220,20 +338,20 @@ local af = Def.ActorFrame{
 				end)(),
 			},
 
-			-- Right Side: Sensor Thresholds Cross
+			-- Right Side: Sensor Thresholds Vertical Bars
 			Def.ActorFrame{
-				InitCommand=function(self) self:x(120) end,
+				InitCommand=function(self) self:x(120):y(-15) end,
 
 				Def.BitmapText{
 					Font="Common Normal",
-					Text="THRESHOLDS",
-					InitCommand=function(self) self:y(-110):zoom(0.4):horizalign(center):diffuse(0.5, 0.5, 0.5, 1) end
+					Text="LIVE VALUES & THRESHOLDS",
+					InitCommand=function(self) self:y(-95):zoom(0.4):horizalign(center):diffuse(0.5, 0.5, 0.5, 1) end
 				},
 
-				CreateSensorPanel("UP",    3, 0,   -45),
-				CreateSensorPanel("LEFT",  1, -85, 5),
-				CreateSensorPanel("RIGHT", 4, 85,  5),
-				CreateSensorPanel("DOWN",  2, 0,   55),
+				CreateSensorBar("LEFT",  1, -75),
+				CreateSensorBar("DOWN",  2, -25),
+				CreateSensorBar("UP",    3, 25),
+				CreateSensorBar("RIGHT", 4, 75),
 			}
 		},
 
