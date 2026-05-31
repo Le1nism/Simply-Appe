@@ -89,7 +89,7 @@ local function CreateSensorBar(name, index, x)
 		-- Bar Fill Quad (valign bottom so it grows upwards)
 		Def.Quad{
 			Name="Fill",
-			InitCommand=function(self) self:valign(bottom):zoomto(bar_width - 4, 0):y(bottom_y):diffuse(1, 1, 1, 0.3) end,
+			InitCommand=function(self) self:valign(1):zoomto(bar_width - 4, 0):y(bottom_y):diffuse(1, 1, 1, 0.3) end,
 			FSRValuesUpdateMessageCommand=function(self, params)
 				local values = params.values or {}
 				local val = values[index]
