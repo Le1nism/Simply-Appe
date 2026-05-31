@@ -18,6 +18,8 @@ local function input(event)
 	-- but only if the event.type is not a Release
 	if (event.GameButton == "Start" or event.GameButton == "Back") and event.type ~= "InputEventType_Release" then
 		overlay:queuecommand("DirectInputToEngine")
+	elseif event.GameButton == "Select" and event.type ~= "InputEventType_Release" then
+		overlay:playcommand("FetchFSRData")
 	end
 
 	return false
