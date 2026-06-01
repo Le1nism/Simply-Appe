@@ -537,7 +537,7 @@ local af = Def.ActorFrame{
 					Font="Common Normal",
 					Text="PROFILE",
 					InitCommand=function(self)
-						self:y(-8):zoom(0.30):horizalign(right):diffuse(0.4, 0.4, 0.4, 1)
+						self:y(0):zoom(0.30):horizalign(right):diffuse(0.4, 0.4, 0.4, 1)
 					end
 				},
 
@@ -545,7 +545,7 @@ local af = Def.ActorFrame{
 					Font="Common Normal",
 					Name="ActiveProfileName",
 					InitCommand=function(self)
-						self:y(6):zoom(0.40):horizalign(right):maxwidth(150):diffuse(1, 1, 1, 0.9)
+						self:y(8):zoom(0.50):horizalign(right):maxwidth(300):diffuse(1, 1, 1, 0.9)
 					end,
 					FSRDataReadyMessageCommand=function(self, params)
 						local active = params.cur_profile or ""
