@@ -311,14 +311,14 @@ local af = Def.ActorFrame{
 			},
 
 			Def.ActorFrame{
-				InitCommand=function(self) self:y(122) end,
+				InitCommand=function(self) self:y(128) end,
 
 				-- "PROFILE" label
 				Def.BitmapText{
 					Font="Common Normal",
 					Text="PROFILE",
 					InitCommand=function(self)
-						self:y(3):zoom(0.32):horizalign(center):diffuse(0.35, 0.35, 0.35, 1)
+						self:x(-80):zoom(0.32):horizalign(right):diffuse(0.35, 0.35, 0.35, 1)
 					end
 				},
 
@@ -326,13 +326,59 @@ local af = Def.ActorFrame{
 				Def.BitmapText{
 					Font="Common Normal",
 					InitCommand=function(self)
-						self:y(13):zoom(0.58):horizalign(center):diffuse(1, 1, 1, 0.9)
+						self:x(-68):zoom(0.52):horizalign(left):diffuse(1, 1, 1, 0.9)
 					end,
 					FSRDataReadyMessageCommand=function(self, params)
 						local active = params.cur_profile or ""
 						self:settext(active ~= "" and active or "None")
 					end
 				},
+
+				-- Dot separator
+				Def.BitmapText{
+					Font="Common Normal",
+					Text="·",
+					InitCommand=function(self)
+						self:x(30):zoom(0.38):diffuse(0.2, 0.2, 0.2, 1)
+					end
+				},
+
+				-- "ALL" label
+				Def.BitmapText{
+					Font="Common Normal",
+					Text="ALL",
+					InitCommand=function(self)
+						self:x(50):zoom(0.32):horizalign(left):diffuse(0.35, 0.35, 0.35, 1)
+					end
+				},
+
+				-- All profiles inline list
+				(function()
+					local t = Def.ActorFrame{}
+					for idx = 1, 6 do
+						t[#t+1] = Def.BitmapText{
+							Font="Common Normal",
+							InitCommand=function(self)
+								self:x(70 + (idx - 1) * 58):zoom(0.46):horizalign(left):visible(false)
+							end,
+							FSRDataReadyMessageCommand=function(self, params)
+								local profiles = params.profiles or {}
+								local name = profiles[idx]
+								if name then
+									self:visible(true):settext(name)
+									if name == params.cur_profile then
+										self:diffuse(GetCurrentColor()):diffusealpha(1)
+									else
+										self:diffuse(1, 1, 1, 0.28)
+									end
+								else
+									self:visible(false)
+								end
+							end
+						}
+					end
+					return t
+				end)(),
 			},
 		},
 
