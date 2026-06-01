@@ -158,7 +158,7 @@ local input = function(event)
 				elseif focus.new_overlay == "SetSummary" then
 					SCREENMAN:GetTopScreen():SetNextScreenName("ScreenEvaluationSummarySet")
 					SCREENMAN:GetTopScreen():StartTransitioningScreen("SM_GoToNextScreen")
-				elseif focus.new_overlay == "LiveThreshold" then
+				elseif focus.new_overlay == "FSR Manager" then
 					sortmenu:queuecommand("DirectInputToFSR")
 				elseif sortmenu.custom_functions[focus.new_overlay] ~= nil then
 					sortmenu.custom_functions[focus.new_overlay](event)
