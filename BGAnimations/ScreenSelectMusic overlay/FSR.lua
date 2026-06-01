@@ -2,6 +2,7 @@ local ws = nil
 local active_thresholds = { 0, 0, 0, 0 }
 local available_profiles = {}
 local current_profile    = ""
+local is_connected       = false
 
 -- ─────────────────────────────────────────────
 -- Navigation state
@@ -315,6 +316,7 @@ local af = Def.ActorFrame{
 	InitCommand=function(self) self:visible(false) end,
 
 	ShowFSRCommand=function(self)
+		is_connected    = false -- reset on each loading
 		selected_zone   = "buttons"
 		selected_bar    = 1
 		selected_button = 1
@@ -325,6 +327,7 @@ local af = Def.ActorFrame{
 	end,
 
 	HideFSRCommand=function(self)
+		is_connected  = false
 		selected_zone = "buttons"
 		self:visible(false)
 		if ws then ws:Close(); ws = nil end
@@ -336,6 +339,7 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRDataReadyMessageCommand=function(self, params)
+		is_connected       = true -- unlock global navigation
 		available_profiles = params.profiles or {}
 		current_profile    = params.cur_profile or ""
 		for i, name in ipairs(available_profiles) do
@@ -345,10 +349,17 @@ local af = Def.ActorFrame{
 			end
 		end
 		ConnectWebSocket()
+		BroadcastFooterUpdate() -- update footer
+	end,
+
+	FSRDataFailedMessageCommand=function(self)
+		is_connected = false -- stop navigation if connection has failed
+		BroadcastFooterUpdate()
 	end,
 
 	-- Input routing systems
 	FSRNavUpCommand=function(self)
+		if not is_connected then return end
 		if selected_zone == "editing" then
 			pending_thresholds[selected_bar] = math.min(MAX_VAL, pending_thresholds[selected_bar] + STEP)
 			BroadcastPendingUpdate()
@@ -361,6 +372,7 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRNavDownCommand=function(self)
+		if not is_connected then return end
 		if selected_zone == "editing" then
 			pending_thresholds[selected_bar] = math.max(0, pending_thresholds[selected_bar] - STEP)
 			BroadcastPendingUpdate()
@@ -373,6 +385,7 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRNavLeftCommand=function(self)
+		if not is_connected then return end
 		if selected_zone == "buttons" then
 			if selected_button > 1 then
 				selected_button = selected_button - 1
@@ -390,6 +403,7 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRNavRightCommand=function(self)
+		if not is_connected then return end
 		if selected_zone == "buttons" then
 			if selected_button < 3 then
 				selected_button = selected_button + 1
@@ -407,6 +421,14 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRConfirmCommand=function(self)
+		-- escape route if connection fails
+		if not is_connected then
+			local screen  = SCREENMAN:GetTopScreen()
+			local overlay = screen:GetChild("Overlay")
+			overlay:playcommand("DirectInputToSortMenu")
+			return
+		end
+
 		if selected_zone == "editing" then
 			active_thresholds[selected_bar] = pending_thresholds[selected_bar]
 			SendThreshold(selected_bar)
@@ -452,6 +474,9 @@ local af = Def.ActorFrame{
 	end,
 
 	FSRBackCommand=function(self)
+		-- disabled if disconnected
+		if not is_connected then return end
+
 		if selected_zone == "editing" then
 			pending_thresholds[selected_bar] = active_thresholds[selected_bar]
 			selected_zone = "buttons"
@@ -512,7 +537,7 @@ local af = Def.ActorFrame{
 					Font="Common Normal",
 					Text="PROFILE",
 					InitCommand=function(self)
-						self:y(0):zoom(0.30):horizalign(right):diffuse(0.4, 0.4, 0.4, 1)
+						self:y(-8):zoom(0.30):horizalign(right):diffuse(0.4, 0.4, 0.4, 1)
 					end
 				},
 
@@ -520,7 +545,7 @@ local af = Def.ActorFrame{
 					Font="Common Normal",
 					Name="ActiveProfileName",
 					InitCommand=function(self)
-						self:y(8):zoom(0.5):horizalign(right):maxwidth(300):diffuse(1, 1, 1, 0.9)
+						self:y(6):zoom(0.40):horizalign(right):maxwidth(150):diffuse(1, 1, 1, 0.9)
 					end,
 					FSRDataReadyMessageCommand=function(self, params)
 						local active = params.cur_profile or ""
@@ -607,14 +632,13 @@ local af = Def.ActorFrame{
 		},
 
 		-- ── Modern Profile Picker Overlay Layer ──────
-		-- Placed completely outside the Dashboard group so it overlays the dashboard components properly
 		Def.ActorFrame{
 			Name="ProfilePickerModal",
 			InitCommand=function(self) self:visible(false) end,
 			FSRProfilePickerOpenMessageCommand=function(self) self:visible(true) end,
 			FSRProfilePickerCloseMessageCommand=function(self) self:visible(false) end,
 
-			-- Internal Isolation Dim Layer (Blurs/dims the background metrics completely)
+			-- Internal Isolation Dim Layer
 			Def.Quad{
 				InitCommand=function(self)
 					self:zoomto(450, 290):y(-5):diffuse(0.04, 0.04, 0.04, 0.97)
@@ -662,7 +686,7 @@ local af = Def.ActorFrame{
 								end
 							},
 
-							-- Left Edge Sharp Selection Bar (Sleek modern UI indicator)
+							-- Left Edge Sharp Selection Bar
 							Def.Quad{
 								Name="RowIndicatorLine",
 								InitCommand=function(self)
@@ -722,7 +746,10 @@ local af = Def.ActorFrame{
 				self:y(166):zoom(0.38):diffuse(0.4, 0.4, 0.4, 1):horizalign(center)
 			end,
 			FSRFooterUpdateMessageCommand=function(self)
-				if selected_zone == "editing" then
+				if not is_connected then
+					self:settext("&START; exit")
+					self:diffuse(color("#ff4444")):diffusealpha(0.85)
+				elseif selected_zone == "editing" then
 					self:settext("&LEFT; &RIGHT; select bar  ·  &UP; &DOWN; adjust  ·  &START; save  ·  &BACK; cancel")
 					self:diffuse(1, 1, 1, 0.9)
 				elseif selected_zone == "profile_picker" then
@@ -734,7 +761,7 @@ local af = Def.ActorFrame{
 				end
 			end,
 			ShowFSRCommand=function(self)
-				self:settext("&LEFT; &RIGHT; navigate  ·  &START; confirm  ·  &BACK; exit")
+				self:settext("&START; exit")
 				self:diffuse(0.4, 0.4, 0.4, 1)
 			end
 		},
