@@ -9,6 +9,7 @@ sort_wheel.custom_functions = {}
 local sortmenu_input = LoadActor("SortMenu_InputHandler.lua", sort_wheel)
 local testinput_input = LoadActor("TestInput_InputHandler.lua")
 local leaderboard_input = LoadActor("Leaderboard_InputHandler.lua")
+local fsr_input = LoadActor("FSR_InputHandler.lua")
 -- "MT" is my personal means of denoting that this thing (the file, the variable, whatever)
 -- has something to do with a Lua metatable.
 --
@@ -159,6 +160,7 @@ local DirectInputToEngine = function(self)
 	screen:RemoveInputCallback(sortmenu_input)
 	screen:RemoveInputCallback(testinput_input)
 	screen:RemoveInputCallback(leaderboard_input)
+	screen:RemoveInputCallback(fsr_input)
 
 	for player in ivalues(PlayerNumber) do
 		SCREENMAN:set_input_redirected(player, false)
@@ -166,6 +168,7 @@ local DirectInputToEngine = function(self)
 	self:playcommand("HideSortMenu")
 	overlay:playcommand("HideTestInput")
 	overlay:playcommand("HideLeaderboard")
+	overlay:playcommand("HideFSR")
 end
 
 ------------------------------------------------------------
@@ -368,6 +371,7 @@ local t = Def.ActorFrame {
 			{ {"ImLovinIt", "AddFavorite"}, function() return GAMESTATE:GetCurrentSong() ~= nil end},
 			{ {"MixTape", "Preferred"}, AddFavorites },
 			{ {"ChangeMode", "Casual"}, SL.Global.Stages.PlayedThisGame == 0 and SL.Global.GameMode ~= "Casual" },	
+			{ {"Tune your FSR?", "FSR Manager"} },
 			{ 
 
 				{"", "CategorySorts"}, 
@@ -443,6 +447,7 @@ local t = Def.ActorFrame {
 		local overlay = self:GetParent()
 		screen:RemoveInputCallback(testinput_input)
 		screen:RemoveInputCallback(leaderboard_input)
+		screen:RemoveInputCallback(fsr_input)
 		screen:AddInputCallback(sortmenu_input)
 		for player in ivalues(PlayerNumber) do
 			SCREENMAN:set_input_redirected(player, true)
@@ -452,6 +457,19 @@ local t = Def.ActorFrame {
 		self:queuecommand("AssessAvailableChoices"):queuecommand("ShowSortMenu")
 		overlay:playcommand("HideTestInput")
 		overlay:playcommand("HideLeaderboard")
+		overlay:playcommand("HideFSR")
+	end,
+	DirectInputToFSRCommand=function(self)
+		local screen = SCREENMAN:GetTopScreen()
+		local overlay = self:GetParent()
+		screen:RemoveInputCallback(sortmenu_input)
+		screen:AddInputCallback(fsr_input)
+		for player in ivalues(PlayerNumber) do
+			SCREENMAN:set_input_redirected(player, true)
+		end
+		self:playcommand("HideSortMenu")
+		
+		overlay:playcommand("ShowFSR")
 	end,
 	DirectInputToTestInputCommand=function(self)
 		local screen = SCREENMAN:GetTopScreen()

@@ -89,6 +89,9 @@ local af = Def.ActorFrame{
 	LoadActor("./Leaderboard.lua"),
 
 	LoadActor("./SongSearch/default.lua"),
+
+	-- FSR Manager overlay
+	LoadActor("./FSR.lua"),
 }
 
 return af
