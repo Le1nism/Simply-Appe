@@ -1,24 +1,41 @@
--- this handles user input while in SelectMusic's FSR Manager overlay
 local function input(event)
 	if not (event and event.PlayerNumber and event.button) then
 		return false
 	end
-	-- don't handle input for a non-joined player
 	if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 		return false
 	end
+	if event.type == "InputEventType_Release" then
+		return false
+	end
 
-	SOUND:StopMusic()
+	local screen  = SCREENMAN:GetTopScreen()
+	local overlay = screen:GetChild("Overlay")
+	local fsr     = overlay:GetChild("FSR")
 
-	local screen   = SCREENMAN:GetTopScreen()
-	local overlay  = screen:GetChild("Overlay")
-	local sortmenu = overlay:GetChild("SortMenu")
+	if not fsr then return false end
 
-	-- pressing Start or Back will queue DirectInputToEngine
-	-- but only if the event.type is not a Release
-	if (event.GameButton == "Start" or event.GameButton == "Back") and event.type ~= "InputEventType_Release" then
-		overlay:queuecommand("DirectInputToEngine")
-	elseif event.GameButton == "Select" and event.type ~= "InputEventType_Release" then
+	local btn = event.GameButton
+
+	if btn == "Back" then
+		fsr:queuecommand("FSRBack")
+
+	elseif btn == "Start" then
+		fsr:queuecommand("FSRConfirm")
+
+	elseif btn == "MenuLeft" or btn == "Left" then
+		fsr:queuecommand("FSRNavLeft")
+
+	elseif btn == "MenuRight" or btn == "Right" then
+		fsr:queuecommand("FSRNavRight")
+
+	elseif btn == "MenuUp" or btn == "Up" then
+		fsr:queuecommand("FSRNavUp")
+
+	elseif btn == "MenuDown" or btn == "Down" then
+		fsr:queuecommand("FSRNavDown")
+
+	elseif btn == "Select" then
 		overlay:playcommand("FetchFSRData")
 	end
 
