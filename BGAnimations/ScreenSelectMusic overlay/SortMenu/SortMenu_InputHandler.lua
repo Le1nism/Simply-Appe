@@ -127,6 +127,42 @@ local input = function(event)
 					GAMESTATE:SaveProfiles()
 					PROFILEMAN:SaveMachineProfile()
 
+					if NETWORK then
+						-- check function hooked to the existing sortmenu
+						sortmenu.CheckProfileOverlay = function(self)
+							local topScreen = SCREENMAN:GetTopScreen()
+							if topScreen and topScreen:GetName() == "ScreenSelectProfile" then
+								-- if menu is still open put to sleep
+								self:sleep(0.3):queuecommand("CheckProfileOverlay")
+							else
+								-- when menu is closed fetch new name
+								local player_name = ""
+								if GAMESTATE:IsHumanPlayer(PLAYER_1) and PROFILEMAN:IsPersistentProfile(PLAYER_1) then
+									player_name = PROFILEMAN:GetProfile(PLAYER_1):GetDisplayName()
+								elseif GAMESTATE:IsHumanPlayer(PLAYER_2) and PROFILEMAN:IsPersistentProfile(PLAYER_2) then
+									player_name = PROFILEMAN:GetProfile(PLAYER_2):GetDisplayName()
+								end
+
+								-- if name is valid send http request
+								if player_name ~= "" then
+									NETWORK:HttpRequest{
+										url = "http://localhost:5000/auto-switch", 
+										method = "POST",
+										body = JsonEncode({ name = player_name }),
+										onResponse = function(response)
+										end
+									}
+								end
+								self.CheckProfileOverlay = nil
+							end
+						end
+
+						-- custom command on engine's sortmenu
+						sortmenu:addcommand("CheckProfileOverlay", sortmenu.CheckProfileOverlay)
+						-- first check (start sleep cycle)
+						sortmenu:queuecommand("CheckProfileOverlay")
+					end
+
 					overlay:queuecommand("DirectInputToEngineForSelectProfile")
 				elseif focus.new_overlay == "AddFavorite" then
 					addOrRemoveFavorite(event.PlayerNumber)
