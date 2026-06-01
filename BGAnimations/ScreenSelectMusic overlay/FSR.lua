@@ -5,10 +5,6 @@ local current_profile    = ""
 
 -- ─────────────────────────────────────────────
 -- Navigation state
--- selected_zone: "buttons" | "editing" | "profile_picker"
--- selected_bar:    1–4 (Only accessible via EDIT mode)
--- selected_button: 1=EDIT, 2=PROFILE, 3=BACK
--- selected_profile_idx: index into available_profiles
 -- ─────────────────────────────────────────────
 local selected_zone        = "buttons"
 local selected_bar         = 1
@@ -102,10 +98,10 @@ local function BroadcastFooterUpdate() MESSAGEMAN:Broadcast("FSRFooterUpdate") e
 local function BroadcastProfilePickerUpdate() MESSAGEMAN:Broadcast("FSRProfilePickerUpdate") end
 
 -- ─────────────────────────────────────────────
--- Sensor Bar
+-- Sensor Bar Component
 -- ─────────────────────────────────────────────
 local function CreateSensorBar(name, index, x)
-	local bar_h    = 110 -- Restored scale balance
+	local bar_h    = 110 
 	local bar_w    = 14
 	local half_h   = bar_h / 2
 	local bottom_y = half_h
@@ -117,12 +113,12 @@ local function CreateSensorBar(name, index, x)
 	return Def.ActorFrame{
 		InitCommand=function(self) self:x(x) end,
 
-		-- Selection outline
+		-- Focused Editing Background Accent Track
 		Def.Quad{
 			InitCommand=function(self) self:zoomto(bar_w + 6, bar_h + 6):diffusealpha(0) end,
 			FSRSelectUpdateMessageCommand=function(self)
 				if IsEditing() then
-					self:diffuse(GetCurrentColor()):diffusealpha(0.6)
+					self:diffuse(GetCurrentColor()):diffusealpha(0.15)
 				else
 					self:diffusealpha(0)
 				end
@@ -131,20 +127,13 @@ local function CreateSensorBar(name, index, x)
 
 		-- Track background
 		Def.Quad{
-			InitCommand=function(self) self:zoomto(bar_w, bar_h):diffuse(0.10, 0.10, 0.10, 1) end,
-			FSRSelectUpdateMessageCommand=function(self)
-				if IsEditing() then
-					self:diffuse(0.16, 0.16, 0.16, 1)
-				else
-					self:diffuse(0.10, 0.10, 0.10, 1)
-				end
-			end
+			InitCommand=function(self) self:zoomto(bar_w, bar_h):diffuse(0.12, 0.12, 0.12, 1) end
 		},
 
-		-- Fill
+		-- Live Value Fill
 		Def.Quad{
 			InitCommand=function(self)
-				self:valign(1):zoomto(bar_w, 0):y(bottom_y):diffuse(0.3, 0.3, 0.3, 1)
+				self:valign(1):zoomto(bar_w, 0):y(bottom_y):diffuse(0.4, 0.4, 0.4, 1)
 			end,
 			FSRValuesUpdateMessageCommand=function(self, params)
 				local val = (params.values or {})[index]
@@ -152,18 +141,18 @@ local function CreateSensorBar(name, index, x)
 					local h = (val / MAX_VAL) * bar_h
 					self:zoomto(bar_w, math.max(0, math.min(h, bar_h)))
 					if val >= (active_thresholds[index] or 0) then
-						self:diffuse(GetCurrentColor()):diffusealpha(0.9)
+						self:diffuse(GetCurrentColor()):diffusealpha(0.85)
 					else
-						self:diffuse(0.3, 0.3, 0.3, 1)
+						self:diffuse(0.22, 0.22, 0.22, 1)
 					end
 				end
 			end
 		},
 
-		-- Threshold line
+		-- Minimalist Threshold Indicator Line
 		Def.Quad{
 			InitCommand=function(self)
-				self:zoomto(bar_w + 6, 1):diffuse(color("#ff4444")):visible(false)
+				self:zoomto(bar_w + 4, 2):diffuse(1, 1, 1, 0.35):visible(false)
 			end,
 			FSRThresholdsUpdateMessageCommand=function(self, params)
 				local t = (params.thresholds or {})[index]
@@ -171,7 +160,6 @@ local function CreateSensorBar(name, index, x)
 					active_thresholds[index] = t
 					pending_thresholds[index] = t
 					self:y(bottom_y - (t / MAX_VAL) * bar_h):visible(true)
-					self:diffuse(color("#ff4444")):diffusealpha(1)
 				end
 			end,
 			FSRDataReadyMessageCommand=function(self, params)
@@ -188,17 +176,17 @@ local function CreateSensorBar(name, index, x)
 				if IsEditing() then
 					self:diffuse(GetCurrentColor()):diffusealpha(1)
 				else
-					self:diffuse(color("#ff4444")):diffusealpha(1)
+					self:diffuse(1, 1, 1, 0.35)
 				end
 			end
 		},
 
-		-- Threshold value (above bar)
+		-- Target Threshold numerical text (above)
 		Def.BitmapText{
 			Font="Common Normal",
 			Text="—",
 			InitCommand=function(self)
-				self:y(-half_h - 12):zoom(0.36):diffuse(0.4, 0.4, 0.4, 1)
+				self:y(-half_h - 12):zoom(0.35):diffuse(0.4, 0.4, 0.4, 1)
 			end,
 			FSRThresholdsUpdateMessageCommand=function(self, params)
 				local t = (params.thresholds or {})[index]
@@ -211,28 +199,28 @@ local function CreateSensorBar(name, index, x)
 			FSRPendingUpdateMessageCommand=function(self)
 				self:settext(tostring(pending_thresholds[index]))
 				if IsEditing() then
-					self:diffuse(GetCurrentColor()):diffusealpha(1)
+					self:diffuse(GetCurrentColor())
 				else
 					self:diffuse(0.4, 0.4, 0.4, 1)
 				end
 			end
 		},
 
-		-- Live value (below bar)
+		-- Live pressure numeric values (below)
 		Def.BitmapText{
 			Font="Common Normal",
 			Text="—",
 			InitCommand=function(self)
-				self:y(half_h + 10):zoom(0.40):diffuse(0.6, 0.6, 0.6, 1)
+				self:y(half_h + 12):zoom(0.38):diffuse(0.5, 0.5, 0.5, 1)
 			end,
 			FSRValuesUpdateMessageCommand=function(self, params)
 				local val = (params.values or {})[index]
 				if val then
 					self:settext(tostring(val))
 					if val >= (active_thresholds[index] or 0) then
-						self:diffuse(GetCurrentColor()):diffusealpha(1)
+						self:diffuse(1, 1, 1, 1)
 					else
-						self:diffuse(0.6, 0.6, 0.6, 1)
+						self:diffuse(0.4, 0.4, 0.4, 1)
 					end
 				end
 			end
@@ -243,13 +231,13 @@ local function CreateSensorBar(name, index, x)
 			Font="Common Normal",
 			Text=name,
 			InitCommand=function(self)
-				self:y(half_h + 24):zoom(0.36):diffuse(0.28, 0.28, 0.28, 1)
+				self:y(half_h + 26):zoom(0.34):diffuse(0.25, 0.25, 0.25, 1)
 			end,
 			FSRSelectUpdateMessageCommand=function(self)
 				if IsEditing() then
-					self:diffuse(1, 1, 1, 0.7)
+					self:diffuse(1, 1, 1, 0.8)
 				else
-					self:diffuse(0.28, 0.28, 0.28, 1)
+					self:diffuse(0.25, 0.25, 0.25, 1)
 				end
 			end
 		},
@@ -257,12 +245,11 @@ local function CreateSensorBar(name, index, x)
 end
 
 -- ─────────────────────────────────────────────
--- Button row helper
--- btn_index: 1=EDIT, 2=PROFILE, 3=BACK
+-- Button Row Component
 -- ─────────────────────────────────────────────
 local btn_labels = { "EDIT", "PROFILE", "BACK" }
-local btn_w, btn_h = 110, 30
-local btn_spacing  = 130
+local btn_w, btn_h = 100, 26
+local btn_spacing  = 125
 
 local function CreateButton(btn_index)
 	local x = (btn_index - 2) * btn_spacing
@@ -274,46 +261,46 @@ local function CreateButton(btn_index)
 	return Def.ActorFrame{
 		InitCommand=function(self) self:x(x) end,
 
-		-- Button background
+		-- Dark Minimal Base
 		Def.Quad{
 			InitCommand=function(self)
-				self:zoomto(btn_w, btn_h):diffuse(0.10, 0.10, 0.10, 1)
+				self:zoomto(btn_w, btn_h):diffuse(0.09, 0.09, 0.09, 1)
 			end,
 			FSRSelectUpdateMessageCommand=function(self)
 				if IsSelected() then
-					self:diffuse(GetCurrentColor()):diffusealpha(0.15)
+					self:diffuse(0.14, 0.14, 0.14, 1)
 				else
-					self:diffuse(0.10, 0.10, 0.10, 1)
+					self:diffuse(0.09, 0.09, 0.09, 1)
 				end
 			end
 		},
 
-		-- Button border
+		-- Under-line selection border accent
 		Def.Quad{
 			InitCommand=function(self)
-				self:zoomto(btn_w + 2, btn_h + 2):diffuse(1, 1, 1, 0.06)
+				self:y(btn_h / 2):zoomto(btn_w, 2):diffusealpha(0)
 			end,
 			FSRSelectUpdateMessageCommand=function(self)
 				if IsSelected() then
-					self:diffuse(GetCurrentColor()):diffusealpha(0.7)
+					self:diffuse(GetCurrentColor()):diffusealpha(1)
 				else
-					self:diffuse(1, 1, 1, 0.06)
+					self:diffusealpha(0)
 				end
 			end
 		},
 
-		-- Button label
+		-- Text typography scaling
 		Def.BitmapText{
 			Font="Common Normal",
 			Text=btn_labels[btn_index],
 			InitCommand=function(self)
-				self:zoom(0.42):horizalign(center):diffuse(0.4, 0.4, 0.4, 1)
+				self:y(-1):zoom(0.40):horizalign(center):diffuse(0.35, 0.35, 0.35, 1)
 			end,
 			FSRSelectUpdateMessageCommand=function(self)
 				if IsSelected() then
-					self:diffuse(1, 1, 1, 0.95)
+					self:diffuse(1, 1, 1, 1)
 				else
-					self:diffuse(0.4, 0.4, 0.4, 1)
+					self:diffuse(0.35, 0.35, 0.35, 1)
 				end
 			end
 		},
@@ -321,7 +308,7 @@ local function CreateButton(btn_index)
 end
 
 -- ─────────────────────────────────────────────
--- Root
+-- Main Core Module Frame
 -- ─────────────────────────────────────────────
 local af = Def.ActorFrame{
 	Name="FSR",
@@ -360,8 +347,7 @@ local af = Def.ActorFrame{
 		ConnectWebSocket()
 	end,
 
-	-- ── Input commands (called by FSR_InputHandler) ──
-
+	-- Input routing systems
 	FSRNavUpCommand=function(self)
 		if selected_zone == "editing" then
 			pending_thresholds[selected_bar] = math.min(MAX_VAL, pending_thresholds[selected_bar] + STEP)
@@ -484,81 +470,84 @@ local af = Def.ActorFrame{
 		end
 	end,
 
-	-- ── Backdrop ──────────────────────────────
+	-- Global Ambient Background Dim (Entire Screen Overlay)
 	Def.Quad{
-		InitCommand=function(self) self:FullScreen():diffuse(0, 0, 0, 0.70) end
+		InitCommand=function(self) self:FullScreen():diffuse(0, 0, 0, 0.65) end
 	},
 
-	-- ── Card Frame ────────────────────────────
+	-- Main Presentation Container Card Box
 	Def.ActorFrame{
 		InitCommand=function(self) self:xy(_screen.cx, _screen.cy) end,
 
-		-- Card background (Height updated to balanced 380 footprint)
+		-- Background Plate
 		Def.Quad{
 			InitCommand=function(self)
-				self:zoomto(450, 380):diffuse(0.06, 0.06, 0.06, 0.98)
+				self:zoomto(450, 380):diffuse(0.05, 0.05, 0.05, 0.96)
 			end
 		},
 
-		-- Top accent bar
+		-- Top color accent rule line
 		Def.Quad{
 			InitCommand=function(self)
 				self:y(-190):zoomto(450, 2):diffuse(GetCurrentColor()):diffusealpha(1)
 			end
 		},
 
-		-- Title
-		Def.BitmapText{
-			Font="Common Normal",
-			Text="FSR MANAGER",
-			InitCommand=function(self)
-				self:y(-160):zoom(0.55):diffuse(1, 1, 1, 0.92):horizalign(center)
-			end
-		},
-
-		-- Stacked profile layout (PROFILE on right edge, value directly below it)
+		-- Header Information Elements
 		Def.ActorFrame{
-			InitCommand=function(self) self:xy(200, -160) end,
+			InitCommand=function(self) self:y(-155) end,
 
 			Def.BitmapText{
 				Font="Common Normal",
-				Text="PROFILE:",
+				Text="FSR MANAGER",
 				InitCommand=function(self)
-					self:zoom(0.34):horizalign(right):diffuse(0.35, 0.35, 0.35, 1)
+					self:x(-195):zoom(0.52):diffuse(1, 1, 1, 0.95):horizalign(left)
 				end
 			},
 
-			Def.BitmapText{
-				Font="Common Normal",
-				Name="ActiveProfileName",
-				InitCommand=function(self)
-					self:y(14):zoom(0.42):horizalign(right):maxwidth(130):diffuse(1, 1, 1, 0.9)
-				end,
-				FSRDataReadyMessageCommand=function(self, params)
-					local active = params.cur_profile or ""
-					self:settext(active ~= "" and active or "None")
-				end,
-				FSRProfileChangedMessageCommand=function(self, params)
-					self:settext(params.cur_profile ~= "" and params.cur_profile or "None")
-				end,
+			Def.ActorFrame{
+				InitCommand=function(self) self:x(195) end,
+
+				Def.BitmapText{
+					Font="Common Normal",
+					Text="PROFILE",
+					InitCommand=function(self)
+						self:y(0):zoom(0.30):horizalign(right):diffuse(0.4, 0.4, 0.4, 1)
+					end
+				},
+
+				Def.BitmapText{
+					Font="Common Normal",
+					Name="ActiveProfileName",
+					InitCommand=function(self)
+						self:y(8):zoom(0.5):horizalign(right):maxwidth(300):diffuse(1, 1, 1, 0.9)
+					end,
+					FSRDataReadyMessageCommand=function(self, params)
+						local active = params.cur_profile or ""
+						self:settext(active ~= "" and active or "None")
+					end,
+					FSRProfileChangedMessageCommand=function(self, params)
+						self:settext(params.cur_profile ~= "" and params.cur_profile or "None")
+					end,
+				},
 			},
 		},
 
-		-- Status text
+		-- Network server connection notifications
 		Def.BitmapText{
 			Font="Common Normal",
 			Name="StatusText",
 			Text="Connecting to FSR server...",
 			InitCommand=function(self)
-				self:y(0):zoom(0.50):diffuse(0.45, 0.45, 0.45, 1):maxwidth(350):horizalign(center)
+				self:y(0):zoom(0.45):diffuse(0.4, 0.4, 0.4, 1):maxwidth(350):horizalign(center)
 			end,
 			SetStatusCommand=function(self, params)
 				if params.status == "loading" then
-					self:visible(true):settext(params.message):diffuse(0.45, 0.45, 0.45, 1)
+					self:visible(true):settext(params.message):diffuse(0.4, 0.4, 0.4, 1)
 				elseif params.status == "error" then
 					self:visible(true)
-					self:settext("Error  ·  " .. params.message .. "\n\nMake sure the FSR server is running on localhost:5000")
-					self:diffuse(color("#ff4444"))
+					self:settext("Error\n" .. params.message .. "\n\nVerify server connection process on port 5000.")
+					self:diffuse(color("#ff4444")):zoom(0.40)
 				else
 					self:visible(false)
 				end
@@ -574,7 +563,7 @@ local af = Def.ActorFrame{
 			end
 		},
 
-		-- ── Dashboard Area ────────────────────
+		-- ── Operational Dashboard Zone ────────────────────
 		Def.ActorFrame{
 			Name="Dashboard",
 			InitCommand=function(self) self:visible(false) end,
@@ -582,15 +571,15 @@ local af = Def.ActorFrame{
 			FSRDataFailedMessageCommand=function(self) self:visible(false) end,
 			ShowFSRCommand=function(self) self:visible(false) end,
 
-			-- Sensor bars
+			-- Live Sensor Channels
 			Def.ActorFrame{
-				InitCommand=function(self) self:xy(0, -15) end,
+				InitCommand=function(self) self:xy(0, -10) end,
 
 				Def.BitmapText{
 					Font="Common Normal",
 					Text="LIVE  ·  THRESHOLDS",
 					InitCommand=function(self)
-						self:y(-78):zoom(0.34):horizalign(center):diffuse(0.35, 0.35, 0.35, 1)
+						self:y(-78):zoom(0.30):horizalign(center):diffuse(0.3, 0.3, 0.3, 1)
 					end
 				},
 
@@ -600,123 +589,137 @@ local af = Def.ActorFrame{
 				CreateSensorBar("R", 4,  95),
 			},
 
-			-- Divider rule
+			-- Middle horizontal rule separator
 			Def.Quad{
 				InitCommand=function(self)
-					self:y(90):zoomto(390, 1):diffuse(1, 1, 1, 0.06)
+					self:y(92):zoomto(390, 1):diffuse(1, 1, 1, 0.04)
 				end
 			},
 
-			-- Button row
+			-- Lower Navigation Actions Button Row
 			Def.ActorFrame{
 				InitCommand=function(self) self:xy(0, 118) end,
 
-				CreateButton(1),  -- EDIT
-				CreateButton(2),  -- PROFILE
-				CreateButton(3),  -- BACK
+				CreateButton(1),
+				CreateButton(2),
+				CreateButton(3),
+			},
+		},
+
+		-- ── Modern Profile Picker Overlay Layer ──────
+		-- Placed completely outside the Dashboard group so it overlays the dashboard components properly
+		Def.ActorFrame{
+			Name="ProfilePickerModal",
+			InitCommand=function(self) self:visible(false) end,
+			FSRProfilePickerOpenMessageCommand=function(self) self:visible(true) end,
+			FSRProfilePickerCloseMessageCommand=function(self) self:visible(false) end,
+
+			-- Internal Isolation Dim Layer (Blurs/dims the background metrics completely)
+			Def.Quad{
+				InitCommand=function(self)
+					self:zoomto(450, 290):y(-5):diffuse(0.04, 0.04, 0.04, 0.97)
+				end
+			},
+			-- Delicate top subtle border divider 
+			Def.Quad{
+				InitCommand=function(self)
+					self:zoomto(450, 1):y(-149):diffuse(1, 1, 1, 0.06)
+				end
 			},
 
-			-- ── Profile Picker Box Overlay ──────
 			Def.ActorFrame{
-				Name="ProfilePicker",
-				InitCommand=function(self) self:visible(false) end,
-				FSRProfilePickerOpenMessageCommand=function(self) self:visible(true) end,
-				FSRProfilePickerCloseMessageCommand=function(self) self:visible(false) end,
+				InitCommand=function(self) self:xy(0, -10) end,
 
-				Def.Quad{
+				Def.BitmapText{
+					Font="Common Normal",
+					Text="SELECT PROFILE",
 					InitCommand=function(self)
-						self:zoomto(450, 240):y(-10):diffuse(0, 0, 0, 0.75)
+						self:y(-72):zoom(0.32):horizalign(center):diffuse(GetCurrentColor()):diffusealpha(0.85)
 					end
 				},
 
-				Def.ActorFrame{
-					InitCommand=function(self) self:xy(0, -10) end,
+				-- Programmatic Row Generation
+				(function()
+					local t = Def.ActorFrame{}
+					local max_show = 5
+					for i = 1, max_show do
+						local row_y = -34 + (i - 1) * 25
+						t[#t+1] = Def.ActorFrame{
+							InitCommand=function(self) self:y(row_y) end,
 
-					Def.Quad{
-						InitCommand=function(self)
-							self:zoomto(250, 170):diffuse(0.08, 0.08, 0.08, 1)
-						end
-					},
-					Def.Quad{
-						InitCommand=function(self)
-							self:zoomto(252, 172):diffuse(1, 1, 1, 0.08)
-						end
-					},
-
-					Def.BitmapText{
-						Font="Common Normal",
-						Text="SELECT PROFILE",
-						InitCommand=function(self)
-							self:y(-68):zoom(0.34):horizalign(center):diffuse(GetCurrentColor()):diffusealpha(0.8)
-						end
-					},
-
-					-- Render Dynamic Profiles
-					(function()
-						local t = Def.ActorFrame{}
-						local max_show = 5
-						for i = 1, max_show do
-							local row_y = -42 + (i - 1) * 22
-							t[#t+1] = Def.ActorFrame{
-								InitCommand=function(self) self:y(row_y) end,
-
-								Def.Quad{
-									Name="RowHighlight",
-									InitCommand=function(self)
-										self:zoomto(230, 20):diffusealpha(0)
-									end,
-									FSRProfilePickerUpdateMessageCommand=function(self)
-										if selected_profile_idx == i then
-											self:diffuse(GetCurrentColor()):diffusealpha(0.15)
-										else
-											self:diffusealpha(0)
-										end
+							-- Smooth low-opacity row highlight overlay
+							Def.Quad{
+								Name="RowHighlight",
+								InitCommand=function(self)
+									self:zoomto(450, 22):diffuse(1, 1, 1, 0):diffusealpha(0)
+								end,
+								FSRProfilePickerUpdateMessageCommand=function(self)
+									if selected_profile_idx == i then
+										self:diffuse(1, 1, 1, 0.05)
+									else
+										self:diffusealpha(0)
 									end
-								},
+								end
+							},
 
-								Def.BitmapText{
-									Font="Common Normal",
-									InitCommand=function(self)
-										self:zoom(0.46):horizalign(center):maxwidth(210):visible(false)
-									end,
-									FSRDataReadyMessageCommand=function(self, params)
-										local name = (params.profiles or {})[i]
-										if name then
-											self:visible(true):settext(name)
-										else
-											self:visible(false)
-										end
-									end,
-									FSRProfilePickerUpdateMessageCommand=function(self)
-										if selected_profile_idx == i then
-											self:diffuse(1, 1, 1, 0.95)
-										else
-											self:diffuse(1, 1, 1, 0.3)
-										end
+							-- Left Edge Sharp Selection Bar (Sleek modern UI indicator)
+							Def.Quad{
+								Name="RowIndicatorLine",
+								InitCommand=function(self)
+									self:x(-223):zoomto(4, 22):diffusealpha(0)
+								end,
+								FSRProfilePickerUpdateMessageCommand=function(self)
+									if selected_profile_idx == i then
+										self:diffuse(GetCurrentColor()):diffusealpha(0.95)
+									else
+										self:diffusealpha(0)
 									end
-								},
-							}
-						end
-						return t
-					end)(),
-				},
+								end
+							},
+
+							-- Profile Label Text
+							Def.BitmapText{
+								Font="Common Normal",
+								InitCommand=function(self)
+									self:zoom(0.44):horizalign(center):maxwidth(380):visible(false)
+								end,
+								FSRDataReadyMessageCommand=function(self, params)
+									local name = (params.profiles or {})[i]
+									if name then
+										self:visible(true):settext(name)
+									else
+										self:visible(false)
+									end
+								end,
+								FSRProfilePickerUpdateMessageCommand=function(self)
+									if selected_profile_idx == i then
+										self:diffuse(1, 1, 1, 1)
+									else
+										self:diffuse(0.35, 0.35, 0.35, 1)
+									end
+								end
+							},
+						}
+					end
+					return t
+				end)(),
 			},
 		},
 
-		-- Footer edge rule
+		-- Bottom card hairline separator rule
 		Def.Quad{
 			InitCommand=function(self)
-				self:y(152):zoomto(410, 1):diffuse(1, 1, 1, 0.06)
+				self:y(152):zoomto(450, 1):diffuse(1, 1, 1, 0.04)
 			end
 		},
 
-		-- Navigational context notes
+		-- Lower System Navigation Context Row
 		Def.BitmapText{
 			Font="Common Normal",
 			Name="FooterHint",
 			Text="&LEFT; &RIGHT; navigate  ·  &START; confirm  ·  &BACK; exit",
 			InitCommand=function(self)
-				self:y(166):zoom(0.40):diffuse(1, 1, 1, 0.8):horizalign(center)
+				self:y(166):zoom(0.38):diffuse(0.4, 0.4, 0.4, 1):horizalign(center)
 			end,
 			FSRFooterUpdateMessageCommand=function(self)
 				if selected_zone == "editing" then
@@ -727,12 +730,12 @@ local af = Def.ActorFrame{
 					self:diffuse(1, 1, 1, 0.9)
 				else
 					self:settext("&LEFT; &RIGHT; navigate  ·  &START; confirm  ·  &BACK; exit")
-					self:diffuse(1, 1, 1, 0.8)
+					self:diffuse(0.4, 0.4, 0.4, 1)
 				end
 			end,
 			ShowFSRCommand=function(self)
 				self:settext("&LEFT; &RIGHT; navigate  ·  &START; confirm  ·  &BACK; exit")
-				self:diffuse(1, 1, 1, 0.8)
+				self:diffuse(0.4, 0.4, 0.4, 1)
 			end
 		},
 	}
