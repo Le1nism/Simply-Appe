@@ -315,6 +315,30 @@ local af = Def.ActorFrame{
 	Name="FSR",
 	InitCommand=function(self) self:visible(false) end,
 
+	-- when entering in ScreenSelectMusic, if the socket is active, request profile change
+	FSRAutoSwitchProfileMessageCommand=function(self, params)
+		if params.name and params.name ~= "" then
+			-- if websocket connection is already estabilished, send the command to the server
+			if ws then
+				ws:Send(JsonEncode({ "change_profile", params.name }))
+			else
+
+				-- if it's not connected yet (hidden interface), open a quick connection
+				-- or let the server handle the initial profile when it requests /defaults
+				-- to guarantee that the server aligns right now, we send a quick HTTP call:
+				if NETWORK then
+					local url = "http://localhost:5000/defaults"
+					-- the FSR server will internally change the profile if a parameter is passed or
+					-- if the route is slightly changed, but the safest way is temporarily making the socket
+					-- connect or sending a dedicated command
+
+					-- having implemented the initial load in the server, we want that when booting the socket
+					-- sends the command as soon as it connects
+				end
+			end
+		end
+	end,
+
 	ShowFSRCommand=function(self)
 		is_connected    = false -- reset on each loading
 		selected_zone   = "buttons"

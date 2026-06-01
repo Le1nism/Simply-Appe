@@ -15,6 +15,29 @@ local af = Def.ActorFrame{
 		-- the preselected music rate.
 		local songOptions = GAMESTATE:GetSongOptionsObject("ModsLevel_Preferred")
 		songOptions:MusicRate(SL.Global.ActiveModifiers.MusicRate)
+
+		-- Switch FSR profile inside ScreenSelectMusic
+		if NETWORK then
+			local player_name = ""
+
+			-- check if P1 (or P2) has a valid and persistent profile (USB or local)
+			if GAMESTATE:IsHumanPlayer(PLAYER_1) and PROFILEMAN:IsPersistentProfile(PLAYER_1) then
+				player_name = PROFILEMAN:GetProfile(PLAYER_1):GetDisplayName()
+			elseif GAMESTATE:IsHumanPlayer(PLAYER_2) and PROFILEMAN:IsPersistentProfile(PLAYER_2) then
+				player_name = PROFILEMAN:GetProfile(PLAYER_2):GetDisplayName()
+			end
+
+			-- if name is valid and not empty send command to the server
+			if player_name ~= "" then
+				NETWORK:HttpRequest{
+					url = "http://localhost:5000/auto-switch", 
+					method = "POST",
+					body = '{ "name": "' .. player_name .. '" }',
+					onResponse = function(response)
+					end
+				}
+			end
+		end
 	end,
 
 	PlayerProfileSetMessageCommand=function(self, params)
