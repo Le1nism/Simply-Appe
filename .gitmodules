@@ -1,0 +1,4 @@
+[submodule "fsr"]
+	path = fsr
+	url = https://github.com/Le1nism/fsr
+	branch = master
