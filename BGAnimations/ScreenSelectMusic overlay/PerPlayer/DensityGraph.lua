@@ -2,7 +2,6 @@
 -- Disable the functionality.
 if GAMESTATE:IsCourseMode() then return end
 
-
 local player = ...
 local pn = ToEnumShortString(player)
 local autoStyle = ThemePrefs.Get("PreferredStyle")=="auto" 
@@ -10,21 +9,6 @@ local autoStyle = ThemePrefs.Get("PreferredStyle")=="auto"
 -- Height and width of the density graph.
 local height = 64
 local width = IsUsingWideScreen() and 286 or 276
-
-local marquee_index
-local text_table = {}
-local leaving_screen = false
-local breakdown_table = {}
-
-local function CloseFolder()
-	local wheel = SCREENMAN:GetTopScreen():GetMusicWheel()
-	local section = wheel:GetSelectedSection()
-	wheel:SetOpenSection(""):SetOpenSection(section):SetOpenSection("")
-	wheel:Move(1)
-	wheel:Move(-1)
-	wheel:Move(0)
-end
-
 if autoStyle then
 	width = 352
 end
@@ -35,12 +19,7 @@ local showPatternInfo = false
 local af = Def.ActorFrame{
 	InitCommand=function(self)
 		self:visible( GAMESTATE:IsHumanPlayer(player) )
-		self:x(_screen.cx-182)
-		if #GAMESTATE:GetHumanPlayers() == 1 then 
-			self:y(_screen.cy+62)
-		else
-			self:y(_screen.cy+23)
-		end
+		self:xy(_screen.cx-182, _screen.cy+23)
 		if autoStyle then
 			self:xy(IsUsingWideScreen() and  _screen.cx-170 or  _screen.cx-176, _screen.cy+20):zoom(0.91)
 		end
@@ -53,34 +32,11 @@ local af = Def.ActorFrame{
 		end
 	end,
 	PlayerJoinedMessageCommand=function(self, params)
-		self:x(_screen.cx-182)
-		if #GAMESTATE:GetHumanPlayers() == 1 then 
-			self:y(_screen.cy+62)
-
-		else
-			self:y(_screen.cy+23)
-		end
-		if player == PLAYER_2 then
-			self:addy(height+24)
-		end
-
-		if IsUsingWideScreen() then
-			self:addx(-5)
-		end
 		if params.Player == player then
 			self:visible(true)
 		end
 	end,
 	PlayerUnjoinedMessageCommand=function(self, params)
-		self:x(_screen.cx-182)
-		self:y(_screen.cy+62)
-		if player == PLAYER_2 then
-			self:addy(height+24)
-		end
-
-		if IsUsingWideScreen() then
-			self:addx(-5)
-		end
 		if params.Player == player then
 			self:visible(false)
 		end
@@ -99,8 +55,6 @@ local af = Def.ActorFrame{
 				showPatternInfo = not showPatternInfo
 				self:queuecommand("TogglePatternInfo")
 			end
-		elseif (params.Name == "CloseFolder1" or params.Name == "CloseFolder2" or params.Name == "CloseFolder3") and params.Name == ThemePrefs.Get("CloseFolderCodes") then
-			CloseFolder()
 		end
 	end,
 }
@@ -114,8 +68,6 @@ af[#af+1] = Def.Quad{
 		end
 		if ThemePrefs.Get("VisualStyle") == "Technique" then
 			self:diffusealpha(0.5)
-		elseif ThemePrefs.Get("VisualStyle") == "Transistor"  then
-			self:diffusealpha(0.7)
 		end
 	end
 }
@@ -184,81 +136,28 @@ af2[#af2]["CurrentSteps"..pn.."ChangedMessageCommand"] = nil
 
 -- The Peak NPS text
 local peakNPSText = THEME:GetString(Branch.GameplayScreen(), "PeakNPS")
-af2[#af2+1] = LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal")..{
+af2[#af2+1] = LoadFont("Common Normal")..{
 	Name="NPS",
-	Text="",
+	Text=peakNPSText..": ",
 	InitCommand=function(self)
-		self:zoom(0.8)
-		if #GAMESTATE:GetHumanPlayers() == 1 then 
-			self:settext(peakNPSText..": \nPeak eBPM: ")
-			self:horizalign(left)
-			self:y(-50)
-			if player == PLAYER_1 then
-				self:x(60)
-			else					
-				self:x(-136)
-			end
+		self:horizalign(left):zoom(0.8)
+		if player == PLAYER_1 then
+			self:addx(60):addy(-41)
 		else
-			self:horizalign("right")
-			self:y(-40)
-			if player == PLAYER_1 then 
-				self:x(140)
-			else
-				self:x(-55)
-			end
-			self:settext("Peak NPS: ")		
+			self:addx(-136):addy(-41)
 		end
 		-- We want black text in Rainbow mode except during HolidayCheer(), white otherwise.
 		self:diffuse((ThemePrefs.Get("RainbowMode") and not HolidayCheer()) and {0, 0, 0, 1} or {1, 1, 1, 1})
 	end,
 	HideCommand=function(self)
-		if #GAMESTATE:GetHumanPlayers() == 1 then 
-			self:settext(peakNPSText..": \nPeak eBPM: ")
-		else
-			self:settext(peakNPSText..": ")
-		end
+		self:settext(peakNPSText..": ")
 		self:visible(false)
 	end,
 	RedrawCommand=function(self)
-		if leaving_screen then return end
 		if SL[pn].Streams.PeakNPS ~= 0 then
-			local nps = SL[pn].Streams.PeakNPS * SL.Global.ActiveModifiers.MusicRate
-			if #GAMESTATE:GetHumanPlayers() == 1 then 
-				self:horizalign("left")
-				self:y(-50)
-				if player == PLAYER_1 then
-					self:x(60)
-				else					
-					self:x(-136)
-				end
-				self:settext((peakNPSText..": %.1f\nPeak eBPM: %.0f"):format(nps,nps*15))
-			else
-				self:horizalign("right")
-				self:y(-40)
-				if player == PLAYER_1 then 
-					self:x(140)
-				else
-					self:x(-55)
-				end
-				marquee_index = 0
-				text_table = {}
-				table.insert(text_table,("Peak NPS: %.1f"):format(nps))
-				table.insert(text_table,("Peak eBPM: %.1f"):format(nps*15))
-				self:finishtweening():playcommand("Marquee",{text_table=text_table})
-			end
+			self:settext((peakNPSText..": %.1f"):format(SL[pn].Streams.PeakNPS * SL.Global.ActiveModifiers.MusicRate))
 			self:visible(not showPatternInfo)
 		end
-	end,
-	MarqueeCommand=function(self)
-		marquee_index = (marquee_index % #text_table) + 1
-		if #GAMESTATE:GetHumanPlayers() > 1 then 
-			self:settext(text_table[marquee_index])
-			self:sleep(2):queuecommand("Marquee")
-		end
-	end,
-	OffCommand=function(self)
-		leaving_screen = true
-		self:stoptweening()
 	end,
 	TogglePatternInfoCommand=function(self)
 		self:visible(not showPatternInfo)
@@ -288,11 +187,10 @@ af2[#af2+1] = Def.ActorFrame{
 		end
 	},
 
-	LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal")..{
+	LoadFont("Common Normal")..{
 		Text="",
 		Name="BreakdownText",
 		InitCommand=function(self)
-			local textHeight = 17
 			local textZoom = 0.8
 			self:maxwidth(width/textZoom):zoom(textZoom)
 		end,
@@ -300,30 +198,13 @@ af2[#af2+1] = Def.ActorFrame{
 			self:settext("")
 		end,
 		RedrawCommand=function(self)
-			if leaving_screen then return end
 			local textZoom = 0.8
-			breakdown_table = {}
-			marquee_index = 0
 			self:settext(GenerateBreakdownText(pn, 0))
-			breakdown_table[1] = GenerateBreakdownText(pn, 0)
 			local minimization_level = 1
-			while self:GetWidth() > (width/textZoom*(1+minimization_level*0.1)) and minimization_level < 4 do
-				if self:GetWidth() < (width/textZoom*(1.7)) then
-					breakdown_table[2] = GenerateBreakdownText(pn, minimization_level-1)
-				end
+			while self:GetWidth() > (width/textZoom) and minimization_level < 4 do
 				self:settext(GenerateBreakdownText(pn, minimization_level))
-				breakdown_table[1] = GenerateBreakdownText(pn, minimization_level)
 				minimization_level = minimization_level + 1
 			end
-			self:finishtweening():playcommand("Marquee",{breakdown_table=breakdown_table})
-		end,
-		MarqueeCommand=function(self)
-			marquee_index = (marquee_index % #breakdown_table) + 1
-			self:settext(breakdown_table[marquee_index])
-			self:sleep(5):queuecommand("Marquee")
-		end,
-		OffCommand=function(self)
-			self:stoptweening()
 		end,
 	}
 }
@@ -334,11 +215,7 @@ af2[#af2+1] = Def.ActorFrame{
 		if GAMESTATE:GetNumSidesJoined() == 2 then
 			self:y(0)
 		else
-			if player == PLAYER_1 then
-				self:y(autoStyle and 76 or 62)
-			else
-				self:y(autoStyle and -132 or -118)
-			end
+			self:y((autoStyle and 74 or 88) * (player == PLAYER_1 and 1 or -1))
 		end
 		self:visible(GAMESTATE:GetNumSidesJoined() == 1)
 	end,
@@ -347,17 +224,13 @@ af2[#af2+1] = Def.ActorFrame{
 		if GAMESTATE:GetNumSidesJoined() == 2 then
 			self:y(0)
 		else
-			if player == PLAYER_1 then
-				self:y(38 + 24)
-			else
-				self:y((autoStyle and 74 or 88) * (player == PLAYER_1 and 1 or -1))
-			end
+			self:y((autoStyle and 74 or 88) * (player == PLAYER_1 and 1 or -1))
 		end
 	end,
 	PlayerUnjoinedMessageCommand=function(self, params)
 		self:visible(GAMESTATE:GetNumSidesJoined() == 1)
-		if player == PLAYER_1 then
-			self:y(38 + 24)
+		if GAMESTATE:GetNumSidesJoined() == 2 then
+			self:y(0)
 		else
 			self:y((autoStyle and 74 or 88) * (player == PLAYER_1 and 1 or -1))
 		end
@@ -370,8 +243,8 @@ af2[#af2+1] = Def.ActorFrame{
 	-- Only shown in 1 Player mode
 	Def.Quad{
 		InitCommand=function(self)
-			self:addy(-4):diffuse(color("#1e282f")):zoomto(width, height-10)
-			if ThemePrefs.Get("VisualStyle") == "Technique" or ThemePrefs.Get("VisualStyle") == "Transistor" then
+			self:diffuse(color("#1e282f")):zoomto(width, height)
+			if ThemePrefs.Get("VisualStyle") == "Technique" then
 				self:diffusealpha(0.5)
 			end
 		end,
@@ -387,24 +260,24 @@ local layout = {
 }
 
 local colSpacing = autoStyle and 200 or 150
-local rowSpacing = 17
+local rowSpacing = 20
 local noneText = THEME:GetString("SLPlayerOptions", "None")
 local totalStreamText = THEME:GetString("SLPlayerOptions", "TotalStream")
 
 for i, row in ipairs(layout) do
 	for j, col in pairs(row) do
-		af3[#af3+1] = LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal")..{
+		af3[#af3+1] = LoadFont("Common normal")..{
 			Text=(col ~= totalStreamText and "0" or noneText).." (0.0%)",
 			Name=col .. "Value",
 			InitCommand=function(self)
 				local textHeight = 17
-				local textZoom = 0.7
+				local textZoom = 0.8
 				self:zoom(textZoom):horizalign(right)
 				if col == "Total Stream" then
 					self:maxwidth(100)
 				end
-				self:xy(-width/2 + 40, -height/2 + 10)
-				self:addx((j-1)*colSpacing)
+				self:xy(-width/2 + 40, -height/2 + 13)
+				self:addx((j-1)*colSpacing )
 				self:addy((i-1)*rowSpacing)
 			end,
 			HideCommand=function(self)
@@ -423,20 +296,20 @@ for i, row in ipairs(layout) do
 					if streamMeasures == 0 then
 						self:settext(noneText.." (0.0%)")
 					else
-						self:settext(string.format("%d/%d (%0.2f%%)", streamMeasures, totalMeasures, streamMeasures/totalMeasures*100))
+						self:settext(string.format("%d/%d (%0.1f%%)", streamMeasures, totalMeasures, streamMeasures/totalMeasures*100))
 					end
 				end
 			end
 		}
 
-		af3[#af3+1] = LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal") ..{
+		af3[#af3+1] = LoadFont("Common Normal")..{
 			Text=THEME:GetString("TechCategory", col),
 			Name=col,
 			InitCommand=function(self)
 				local textHeight = 17
 				local textZoom = 0.8
 				self:maxwidth(width/textZoom):zoom(textZoom):horizalign(left)
-				self:xy(-width/2 + 50, -height/2 + 10)
+				self:xy(-width/2 + 50, -height/2 + 13)
 				self:addx((j-1)*colSpacing)
 				self:addy((i-1)*rowSpacing)
 			end,
