@@ -100,7 +100,6 @@ if PREFSMAN:GetPreference("EventMode") then
 			self:zoom( SL_WideScale(0.3, 0.36) )
 			self:y( SL_WideScale(3.15, 3.5) / self:GetZoom() )
 			self:diffusealpha(0):x(_screen.cx + SL_WideScale(150, 200))
-			self:visible(false)
 		end,
 		OnCommand=function(self)
 			self:sleep(0.1):decelerate(0.33):diffusealpha(1)

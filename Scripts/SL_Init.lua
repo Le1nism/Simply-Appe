@@ -25,7 +25,12 @@ local PlayerDefaults = {
 				HideDanger = false,
 				HideComboExplosions = false,
 
-				ColumnFlashOnMiss = false,
+				FlashMiss = false,
+				FlashWayOff = false,
+				FlashDecent = false,
+				FlashGreat = false,
+				FlashExcellent = false,
+				FlashFantastic = false,
 				SubtractiveScoring = false,
 				MeasureCounter = "None",
 				MeasureCounterLeft = false,
@@ -54,6 +59,7 @@ local PlayerDefaults = {
 
 				HideEarlyDecentWayOffJudgments = false,
 				HideEarlyDecentWayOffFlash = false,
+				ShowEarlyDecentWayOffColumn = false,
 
 				-- While SL no longer supports disabling individual timing windows
 				-- in ITG mode, Casual mode still does so we still track it here.
@@ -91,7 +97,8 @@ local PlayerDefaults = {
 			}
 			-- TODO(teejusb): Rename "Streams" as the data contains more information than that.
 			self.Streams = {
-				-- Chart identifiers for caching purposes.
+				-- Chart identifiers used to cache the GrooveStats hash so we only
+				-- parse a given chart once.
 				Filename = "",
 				StepsType = "",
 				Difficulty = "",
@@ -102,7 +109,7 @@ local PlayerDefaults = {
 				EquallySpacedPerMeasure = {},
 				PeakNPS = 0,
 				NPSperMeasure = {},
-				columnCues = {},
+				ColumnCues = {},
 				Hash = '',
 
 				Crossovers = 0,
@@ -162,10 +169,10 @@ local GlobalDefaults = {
 			}
 			self.ScreenAfter = {
 				PlayAgain = "ScreenEvaluationSummary",
-				PlayerOptions  = "ScreenGameplay",
-				PlayerOptions2 = "ScreenGameplay",
-				PlayerOptions3 = "ScreenGameplay",
-				PlayerOptions4 = "ScreenGameplay",
+				PlayerOptions  = Branch.GameplayScreen(),
+				PlayerOptions2 = Branch.GameplayScreen(),
+				PlayerOptions3 = Branch.GameplayScreen(),
+				PlayerOptions4 = Branch.GameplayScreen(),
 			}
 			self.ContinuesRemaining = ThemePrefs.Get("NumberOfContinuesAllowed") or 0
 			self.GameMode = ThemePrefs.Get("DefaultGameMode") or "ITG"

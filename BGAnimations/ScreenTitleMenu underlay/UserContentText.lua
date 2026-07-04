@@ -77,8 +77,8 @@ local GetText = function()
 
 
 	local text = ("%s%s%s\n%s%s\n%s"):format(
-		sl_name,  (sl_version and (" v" .. sl_version) or ""), (newer_sl_exists and " ("..table.concat(sl_parts, ".").." Available📥)" or ""),
-		sm_version, (newer_itgmania_exists and " (" .. table.concat(itgmania_parts, ".") .." Available📥)" or ""),
+		sl_name,  (sl_version and (" v" .. sl_version) or ""), (newer_sl_exists and " ("..table.concat(SL.Global.SimplyLoveLatestVersion, ".").." Available📥)" or ""),
+		sm_version, (newer_itgmania_exists and " (" .. table.concat(SL.Global.ITGmaniaLatestVersion, ".") .." Available📥)" or ""),
 		song_stats
 	)
 	return text
@@ -87,7 +87,7 @@ end
 return LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal")..{
 	Text=GetText(),
 	InitCommand=function(self)
-		self:zoom(0.8):xy(410, -205):horizalign(right):diffusealpha(0)
+		self:zoom(0.8):y(-150):diffusealpha(0)
 		self:playcommand("UpdateColor")
 	end,
 	OnCommand=function(self) self:sleep(0.2):linear(0.4):diffusealpha(1) end,
@@ -97,9 +97,10 @@ return LoadFont(ThemePrefs.Get("ThemeFont") .. " Normal")..{
 		if ThemePrefs.Get("RainbowMode") and not HolidayCheer() then
 			textColor = Color.Black
 		end
-		if ThemePrefs.Get("VisualStyle") == "SRPG9" then
-			textColor = color(SL.SRPG9.TextColor)
+		if ThemePrefs.Get("VisualStyle") == "SRPG10" then
+			textColor = color(SL.SRPG10.TextColor)
 			shadowLength = 0.4
+			self:y(-190)
 		end
 
 		self:diffuse(textColor):shadowlength(shadowLength)

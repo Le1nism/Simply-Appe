@@ -37,6 +37,8 @@ local function input(event)
 						GAMESTATE:AddStageToPlayer(pn)
 					end
 				end
+				-- If we're in Pay mode, we need to deduct credits accordingly.
+				if PREFSMAN:GetPreference("CoinMode") == "CoinMode_Pay" then
 
 				local coins = PREFSMAN:GetPreference("CoinsPerCredit")
 				local premium = PREFSMAN:GetPreference("Premium")
@@ -54,6 +56,7 @@ local function input(event)
 				end
 
 				GAMESTATE:InsertCoin(-coins)
+				end
 
 				SL.Global.Stages.Remaining = PREFSMAN:GetPreference("SongsPerPlay")
 				SL.Global.ContinuesRemaining = SL.Global.ContinuesRemaining - 1
